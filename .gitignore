@@ -1,0 +1,47 @@
+# ROMs and ROM images: never commit
+*.zip
+*.rom
+*.nv
+*.nvm
+
+# Quartus (clean.bat removes the same)
+output_files/
+db/
+incremental_db/
+*.rpt
+*.summary
+*.done
+*.pin
+*.jdi
+*.sof
+*.srf
+build_id.v
+c5_pin_model_dump.txt
+jtag.cdf
+compile.log
+qdb/
+PLLJ_PLLSPE_INFO.txt
+
+# the tested release's fitter and timing summaries stay with its RBF
+!releases/*.summary
+
+# simulation: build products, logs, frame / memory dumps
+sim/obj_*/
+sim/*.log
+artifacts/
+*.ppm
+*.hex
+!modules/**/*.mem
+
+# the release zip (attach it to the GitHub release)
+dist/
+
+# scratch: MAME's dumps / snapshots / ROM images (work/, normally next to the repository, not in it) and MAME's source (ref/)
+work/
+ref/
+tools/mame/
+tools/mame*.exe
+
+# Python
+__pycache__/
+*.pyc

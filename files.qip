@@ -1,0 +1,36 @@
+set_global_assignment -name SYSTEMVERILOG_FILE OhMyGod.sv
+set_global_assignment -name SDC_FILE OhMyGod.sdc
+set_global_assignment -name QIP_FILE rtl/pll.qip
+set_global_assignment -name SEARCH_PATH rtl
+
+# the machine
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_ram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_cen.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_cache.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_main.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_video.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_render.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_sound.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_core.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_crtadj.sv
+set_global_assignment -name SYSTEMVERILOG_FILE modules/crt_adjust/crt_adjust.sv
+
+# MiSTer platform layer: the SDRAM and the loader
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_mem.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sdram_ctrl.sv
+
+# fx68k 68000 (GPL-3, Jorge Cwik); microrom.mem / nanorom.mem are read from the project directory
+set_global_assignment -name SYSTEMVERILOG_FILE modules/cpu-fx68k/fx68kAlu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE modules/cpu-fx68k/uaddrPla.sv
+set_global_assignment -name SYSTEMVERILOG_FILE modules/cpu-fx68k/fx68k.sv
+
+# jt6295 (OKI M6295, GPL-3.0, Jose Tejada), INTERPOL = 0
+set_global_assignment -name VERILOG_FILE modules/jt6295/hdl/jt6295.v
+set_global_assignment -name VERILOG_FILE modules/jt6295/hdl/jt6295_adpcm.v
+set_global_assignment -name VERILOG_FILE modules/jt6295/hdl/jt6295_timing.v
+set_global_assignment -name VERILOG_FILE modules/jt6295/hdl/jt6295_acc.v
+set_global_assignment -name VERILOG_FILE modules/jt6295/hdl/jt6295_ctrl.v
+set_global_assignment -name VERILOG_FILE modules/jt6295/hdl/jt6295_rom.v
+set_global_assignment -name VERILOG_FILE modules/jt6295/hdl/jt6295_serial.v
+set_global_assignment -name VERILOG_FILE modules/jt6295/hdl/jt6295_sh_rst.v
+set_global_assignment -name SEARCH_PATH modules/jt6295/hdl

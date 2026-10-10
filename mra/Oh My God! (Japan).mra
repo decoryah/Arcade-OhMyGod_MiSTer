@@ -1,0 +1,57 @@
+<misterromdescription>
+    <rotation>horizontal</rotation>
+    <name>Oh My God! (Japan)</name>
+    <setname>ohmygod</setname>
+    <mameversion>0289</mameversion>
+    <year>1993</year>
+    <manufacturer>Atlus</manufacturer>
+    <players>2</players>
+    <joystick>8</joystick>
+    <rbf>ohmygod</rbf>
+    <region>Japan</region>
+    <platform>Atlus</platform>
+
+    <!--
+      Flat image for the OhMyGod core (rtl/omg_mem.sv), the same for both sets:
+
+        0x000000  0x080000  68000 program
+        0x080000  0x080000  character ROM, 8x8 4bpp packed
+        0x100000  0x080000  sprite ROM, 16x16 4bpp packed
+        0x180000  0x200000  OKI M6295 samples
+        0x380000  0x000010  configuration
+        0x380010            end
+
+      Expects the MAME 0.289 merged romset or the split sets: parts are found by name and CRC,
+      whatever zip or folder holds them.
+
+      DIP switches (ioctl index 254): byte 0 is the high byte of MAME's DSW1 port, byte 1 the high byte of DSW2
+      (bit 0 is the lowest bit of the byte; a 1 is MAME's default setting).
+    -->
+    <switches default="FF,FF" base="16">
+        <dip bits="0,1,2,3" name="Coin A" ids="Free Play,2C/3C,4C/5C,5C/6C,4C/3C,6C/3C,2C/3C (alt),4C/1C,3C/1C,2C/1C,1C/6C,1C/5C,1C/4C,1C/3C,1C/2C,1C/1C"/>
+        <dip bits="4,5,6,7" name="Coin B" ids="Free Play,2C/3C,4C/5C,5C/6C,4C/3C,6C/3C,2C/3C (alt),4C/1C,3C/1C,2C/1C,1C/6C,1C/5C,1C/4C,1C/3C,1C/2C,1C/1C"/>
+        <dip bits="8,9" name="1P Difficulty" ids="Very Hard,Hard,Easy,Normal"/>
+        <dip bits="10,11" name="VS Difficulty" ids="Hard,Normal,Hard Jake,Normal Jake"/>
+        <dip bits="12" name="Vs Matches/Credit" ids="1,3"/>
+        <dip bits="13" name="Demo Sounds" ids="Off,On"/>
+        <dip bits="14" name="Balls Have Eyes" ids="No,Yes"/>
+        <dip bits="15" name="Test Mode" ids="On,Off"/>
+    </switches>
+
+    <rom index="0" zip="ohmygod.zip" md5="None">
+
+        <!-- maincpu: 512 KB -->
+        <part name="omg-p.114" crc="48fa40ca"/>
+        <!-- chars: 512 KB -->
+        <part name="omg-b.117" crc="73621fa6"/>
+        <!-- sprites: 512 KB -->
+        <part name="omg-s.120" crc="6413bd36"/>
+        <!-- oki: 2048 KB -->
+        <part name="omg-g.107" crc="7405573c"/>
+        <!-- configuration: game (0 Oh My God!, 1 Naname de Magic!) -->
+        <part>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00</part>
+
+    </rom>
+
+    <buttons names="Button,Start,Coin,Service" default="A,Start,Select,R"/>
+</misterromdescription>
