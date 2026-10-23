@@ -15,8 +15,9 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_core.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_crtadj.sv
 set_global_assignment -name SYSTEMVERILOG_FILE modules/crt_adjust/crt_adjust.sv
 
-# MiSTer platform layer: the SDRAM and the loader
+# MiSTer platform layer: the SDRAM, the loader and the fast load from the DDR3
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_mem.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/omg_fastload.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sdram_ctrl.sv
 
 # fx68k 68000 (GPL-3, Jorge Cwik); microrom.mem / nanorom.mem are read from the project directory

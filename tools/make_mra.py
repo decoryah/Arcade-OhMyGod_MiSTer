@@ -21,6 +21,12 @@ TITLES = {
     "naname":  ("Naname de Magic! (Japan)", "1994", "naname.zip"),
 }
 
+# The one button's action, watched in MAME 0.289 (tools/lua/probe_inputs.lua): Oh My God! -- with the falling chain upright it makes
+# the chain fall as Down does, faster than it falls by itself, and does nothing while the chain is swung sideways; Naname de Magic!
+# -- it turns the falling piece. The game's own switch test calls it only BUTTON (and Start SELECT).  Service is P2's "Service 1"
+# (a credit, key 9); Test is P1's "Service Mode" (opens the game's test menu, key F2).  Neither is in the button mapping: keys only.
+BUTTON = {"ohmygod": "Drop", "naname": "Rotate"}
+
 COIN = "Free Play,2C/3C,4C/5C,5C/6C,4C/3C,6C/3C,2C/3C (alt),4C/1C,3C/1C,2C/1C,1C/6C,1C/5C,1C/4C,1C/3C,1C/2C,1C/1C"
 
 # DIP switches: byte 0 = the high byte of MAME's DSW1, byte 1 = the high byte of DSW2 (a 1 is MAME's default); the low
@@ -92,13 +98,13 @@ def mra(setname):
     -->
 {SW[setname]}
 
-    <rom index="0" zip="{zipname}" md5="None">
+    <rom index="0" zip="{zipname}" md5="None" address="0x32000000">
 
 {body}
 
     </rom>
 
-    <buttons names="Button,Start,Coin,Service" default="A,Start,Select,R"/>
+    <buttons names="{BUTTON[setname]},Start,Coin" default="A,Start,Select"/>
 </misterromdescription>
 """
 

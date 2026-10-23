@@ -60,8 +60,13 @@ module omg_core (
     logic  [9:0] lb_addr, lb_data;
     logic  [9:0] pal_addr;
     logic [15:0] pal_data;
+    // The screen flip (bit 14 of the sprite bank register) is taken over at the start of vertical blanking: a frame is drawn and shown one
+    // way throughout (the lines of the next frame are drawn from the last blank line on, after this).
+    logic        flipscreen, flip_f;
+    initial flip_f = 1'b0;
+    always_ff @(posedge clk) if (vbl_pulse) flip_f <= flipscreen;
     omg_video u_video (
-        .clk(clk),
+        .clk(clk), .flip(flip_f),
         .ce_pix(ce_pix), .hblank(hblank), .vblank(vblank), .hsync(hsync), .vsync(vsync), .rgb(rgb),
         .line_start(line_start), .line_no(line_no), .line_bank(line_bank), .vbl_pulse(vbl_pulse),
         .lb_we(lb_we), .lb_addr(lb_addr), .lb_data(lb_data),
@@ -90,7 +95,7 @@ module omg_core (
         .vblank_irq(vbl_pulse),
         .vr_addr(vr_addr), .vr_data(vr_data), .sr_addr(sr_addr), .sr_data(sr_data),
         .pal_addr(pal_addr), .pal_data(pal_data),
-        .scrollx(scrollx), .scrolly(scrolly), .spritebank(spritebank),
+        .scrollx(scrollx), .scrolly(scrolly), .spritebank(spritebank), .flipscreen(flipscreen),
         .oki_wr(oki_wr), .oki_din(oki_din), .oki_dout(oki_dout), .oki_bank(oki_bank),
         .wdog_reset(wd_pulse), .wdog_kick_o(),
         .trc_stb(trc_stb), .trc_addr(dbg_addr), .trc_rw(trc_rw), .trc_data(trc_data), .trc_be(trc_be),
@@ -124,7 +129,7 @@ module omg_core (
     omg_render u_render (
         .clk(clk), .rst(rst),
         .start(line_start), .line(line_no), .bank(line_bank), .busy(dbg_render_busy), .overrun(dbg_ovr),
-        .scrollx(scrollx), .scrolly(scrolly), .spritebank(sb_eff),
+        .scrollx(scrollx), .scrolly(scrolly), .spritebank(sb_eff), .flip(flip_f),
         .vr_addr(vr_addr), .vr_data(vr_data), .sr_addr(sr_addr), .sr_data(sr_data),
         .t_req(t_req), .t_addr(t_addr), .t_wr(t_wr), .t_idx(t_idx), .t_data(t_data), .t_done(t_done),
         .s_req(s_req), .s_addr(s_addr), .s_wr(s_wr), .s_idx(s_idx), .s_data(s_data), .s_done(s_done),

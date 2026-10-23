@@ -9,8 +9,8 @@ export NOBUILD=1
 ok=0; bad=0; worst=0
 for regs in $R/work/states/$g/f*.regs; do
   p=${regs%.regs}; n=$(basename $p)
-  sim/run.sh $R/work/$g.rom 3 /tmp/cr_$g +state=$p +first=3 +every=100 > /tmp/cr_run.log 2>&1 || { echo "BENCH FAILED"; tail /tmp/cr_run.log; exit 2; }
-  r=$(grep -oE "longest render [0-9]+" /tmp/cr_run.log | tail -1 | grep -oE "[0-9]+")
+  sim/run.sh $R/work/$g.rom 3 /tmp/cr_$g +state=$p +first=3 +every=100 > /tmp/cr_run_$g.log 2>&1 || { echo "BENCH FAILED"; tail /tmp/cr_run_$g.log; exit 2; }
+  r=$(grep -oE "longest render [0-9]+" /tmp/cr_run_$g.log | tail -1 | grep -oE "[0-9]+")
   [ -n "$r" ] && [ "$r" -gt "$worst" ] && worst=$r
   out=$(python3 tools/omg_cmp.py /tmp/cr_$g.f00003.ppm $p.rgb | head -1)
   case "$out" in *": 0 of"*) ok=$((ok+1));; *) bad=$((bad+1)); echo "$n: $out";; esac

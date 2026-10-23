@@ -12,8 +12,9 @@ supply your own MAME romsets.
 
 ## Status
 
-**Tested on a real MiSTer** by the repository owner: the picture, the sound, the controls and the OSD options all behave
-as they should.
+**Tested on a real MiSTer** by the repository owner: the picture, the sound, the controls and the OSD options (20261010), and
+the new features of 20261023 (fast loading, Scale, named buttons). The Flip Screen of Naname de Magic! did not flip in
+20261023; 20261023b fixes that and removes Service and Test from the button mapping, and has not been on a board yet.
 
 What was checked besides, in simulation and in the Quartus tool flow, against MAME 0.289 (details and numbers in
 `docs/status.md`):
@@ -26,30 +27,61 @@ What was checked besides, in simulation and in the Quartus tool flow, against MA
 * The whole machine from reset (68000, cache, SDRAM controller, cold-start watchdog reset) with MAME's inputs replayed: frames
   230 and 280 of both games pixel-identical.
 * The sound path against MAME's own OKI samples: same samples, MAME's level (x16), residual 0.01 %.
-* Quartus Prime Lite 17.0 compiles the design without errors; timing met (+1.4 ns at 96 MHz), 27 % of the ALMs.
+* The real MiSTer top (`sim/emu/`, with `hps_io` and the PLL stubbed): the image loaded the fast way in 0.135 s (every word in
+  the SDRAM), the machine then run through the real 3 s cold start and compared with MAME (frames 230 and 280 of both games
+  pixel-identical); the joysticks and the keyboard reach exactly their bits of the board's ports; the size
+  asked of the HDMI scaler by all 60 Scale / Aspect ratio / scaler size combinations tried; the scandoubler's raster; CRT Adjust
+  on at zero = off, to the clock.
+* The Flip Screen DIP of Naname de Magic!: the game's own data (MAME does not emulate the hardware's flip) give MAME's normal
+  picture exactly once the flip's fixed offsets are taken out; the core's flipped picture equals that picture turned 180 degrees on
+  16 of 16 game states, in the reference renderer and in the RTL.
+* Quartus Prime Lite 17.0 compiles the design without errors, timing met.
 
 ## Install
 
-1. Put `releases/ohmygod_YYYYMMDD.rbf` in `/media/fat/_Arcade/cores/` and the two `.mra` files of `mra/` in `/media/fat/_Arcade/`.
-   Keep the RBF's `ohmygod_` name and date: MiSTer finds the core by the MRA's `<rbf>` name plus the date.
+1. Put `releases/ohmygod_YYYYMMDD.rbf` in `/media/fat/_Arcade/cores/` and the two `.mra` files of `mra/` in `/media/fat/_Arcade/`
+   (or unzip the release zip over the root of the SD card). Keep the RBF's `ohmygod_` name and date: MiSTer finds the core by
+   the MRA's `<rbf>` name plus the date. Use the MRAs of the same release as the RBF, and delete older `ohmygod_*.rbf` files.
 2. Put your MAME 0.289 `ohmygod.zip` and `naname.zip` in `/media/fat/games/mame/`.
-3. Start a game from the Arcade menu. The ROM takes a few seconds to load. **A cold start shows a grid-patterned / black screen
-   for 3 seconds** before the ATLUS logo: the game fills its RAM, writes a signature and waits for the watchdog to reset it
-   (MAME does the same, with the same 3 s). The OSD's Reset keeps the RAM, so the signature survives it and the game
-   restarts without the wait.
+3. Start a game from the Arcade menu. With a recent Main_MiSTer the 3.6 MB ROM image loads in a fraction of a second (**fast
+   loading**: the MRAs carry `address="0x32000000"`, which makes Main_MiSTer copy the whole image into the DDR3 at once, and the
+   core plays it from there into the SDRAM); an older Main_MiSTer ignores the attribute and streams the image as before, which
+   takes a few seconds. **A cold start shows a grid-patterned / black screen for 3 seconds** before the ATLUS logo: the game
+   fills its RAM, writes a signature and waits for the watchdog to reset it (MAME does the same, with the same 3 s). The OSD's
+   Reset keeps the RAM, so the signature survives it and the game restarts without the wait.
+4. **Buttons:** if you mapped the controller with an earlier build, redo "Define joystick buttons" (the list now names the game's
+   action; the Service and Test entries of 20261023 are gone again), or delete this core's `*_input_*.map` files in
+   `/media/fat/config/inputs/`.
 
 ## Controls
 
-One joystick, one button per player; the keyboard has MAME's defaults (1 / 2 start, 5 / 6 coin, 9 service).
-The OSD's `Button, Start, Coin, Service` follow the MRA's `<buttons>`.
+One joystick and one button per player, Start and Coin each. MiSTer's button mapping names them by what they do (the names
+come from the MRA):
+
+| Button | Oh My God! | Naname de Magic! | Default on a gamepad |
+|---|---|---|---|
+| first | **Drop**: the falling chain falls faster (it does what Down does, and nothing while the chain is swung sideways) | **Rotate**: turns the falling piece | A |
+| Start, Coin | Start, Coin | the same | Start, Select |
+
+The joystick moves the piece (in Oh My God! left / right swing the chain to that side). The keyboard has MAME's defaults: 1 / 2
+start, 5 / 6 coin, **9 service** (a service credit, MAME's *Service 1*) and **F2 test** (the game's test menu, MAME's *Service
+Mode*: monitor, switch and sound tests and the DIP switch list; in it the 1P Start button selects and F2 returns to the menu). The
+two are separate switches on the board and the program treats them differently; they are keys only, not in the button mapping.
 
 ## OSD
 
 * **Aspect ratio**, **Scandoubler Fx**: the framework's.
+* **Scale**: Normal, V-Integer, HV-Integer, Narrower HV-Integer, HV-Integer+: integer scaling on the HDMI scaler (the framework's
+  `video_freak`). With Aspect ratio *Full Screen* an integer Scale is given the screen's own proportions, so the picture is a
+  whole-number size in the screen's aspect.
 * **CRT Adjust** (H-Size, H-Position, V-Shift): for the 15 kHz output, through rmonic79's line buffer; the horizontal sync stays
-  native so the CRT keeps its lock.
+  native so the CRT keeps its lock. It does nothing while the scandoubler is in use (Scandoubler Fx, or `forced_scandoubler` in
+  MiSTer.ini).
 * **DIP switches**: the MRA's, per game (coinage, difficulty, VS matches per credit, demo sounds, "Balls Have Eyes" / flip
-  screen, test mode / freeze).
+  screen, test mode / freeze). Naname de Magic!'s **Flip Screen** turns the whole picture, tiles and sprites, through 180 degrees:
+  the game then sets bit 14 of the sprite bank register (which MAME ignores, so MAME's picture of it is broken) and writes its
+  scroll words and sprite positions moved by fixed amounts; taking those out gives MAME's normal picture exactly, and the core turns
+  that picture (`docs/hardware.md`).
 * **Volume**: Normal is MAME's level (the OKI's output is exactly 16 times jt6295's 14-bit sum of voices, clipped to 16 bits; fitted against MAME's own samples, residual 0.01 %), then 6 / 12 / 18 dB lower.
 * **Sprite bank flip**: from the IRQ at the start of vertical blank the game builds the next sprite list into the hidden half
   of the sprite RAM and flips the bank flag about 46 line times later, i.e. at line ~30 of the picture (Naname: 31, or 45 / 46 in
@@ -81,6 +113,12 @@ sim/run.sh <image> <frames> <out> +inputs=<replay> +every=50 +first=49 +wav    #
 ```
 `tools/lua/dump_state.lua` makes the states and the replay inputs with MAME 0.289 (see its header); `tools/omg_ref.py`,
 `tools/omg_diff.py`, `tools/omg_corpus.py`, `tools/omg_cmp.py` compare.
+
+`sim/emu/run_emu.sh <image>` is the end-to-end bench of the real MiSTer top (`OhMyGod.sv`, with `hps_io` and the PLL stubbed and
+a behavioural SDRAM and DDR3 on the pins): it loads the image streamed or the fast way (`FAST=1`), compares the SDRAM with the
+image, checks how the joysticks and the keyboard reach the board's ports (`BTN=1`), the raster with the scandoubler on (`FX`,
+`FSD`), CRT Adjust (`CRT`), the size asked of the HDMI scaler for every Scale / Aspect ratio setting (`SCALEMATRIX=1`), and
+writes the pictures of chosen MAME frames (`PICS=230,280`) for `tools/omg_cmp.py`. Its header lists the options.
 
 `sim/bench/` holds the scripts that run the whole chain: MAME's dumps (`mame/run_states.sh`, `run_replay.sh`, `run_sr.sh`; set
 `MAME_EXE` and `ROM_PATH`), the ROM check (`check_rom.sh`, `mra.sh`; `ROM_DIR` is the romset folder), the reference renderer (`ref.sh`, `corpus.sh`), the RTL's

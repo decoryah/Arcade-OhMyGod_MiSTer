@@ -11,7 +11,8 @@
 --   WRLOG=<file>           log of the 68000's writes to the control / OKI / sprite bank registers: frame vpos addr data mask
 --
 -- For every captured frame <N>:
---   f<N>.regs     scrollx scrolly spritebank sndbank ctrl (as the driver holds them), wdog reads so far
+--   f<N>.regs     frame scrollx scrolly spritebank sndbank ctrl wdog flip (as the driver holds them; wdog = reads so far; flip = bit 14 of the
+--                 sprite bank register, which MAME ignores and Naname de Magic! sets with its Flip Screen DIP switch; older files have 7 fields)
 --   f<N>.ram300   0x300000-0x30FFFF, one 16-bit word per line (hex); the tile RAM is words 0x2000..0x3FFF
 --   f<N>.ram700   0x700000-0x70FFFF; the sprite RAM is words 0..0x1FFF
 --   f<N>.pal      0x600000-0x6007FF (1024 words)
@@ -28,7 +29,7 @@ local GAME  = os.getenv("GAME") or "ohmygod"
 local SHIFT = (GAME == "naname") and 0 or 4
 local DIR   = os.getenv("DUMPDIR") or "."
 
-local reg = { scrollx = 0, scrolly = 0, spritebank = 0, sndbank = 0, ctrl = 0, wdog = 0 }
+local reg = { scrollx = 0, scrolly = 0, spritebank = 0, sndbank = 0, ctrl = 0, wdog = 0, flip = 0 }
 
 -- ABSOLUTE machine frame: both games start with a cold-start routine that fills the RAM, writes a signature and then waits for
 -- the watchdog (MAME: 3 s) to reset the machine; MAME runs the autoboot script again on that reset, so a counter of this script's
@@ -69,7 +70,7 @@ KEEP.t1 = sp:install_write_tap(0x400000, 0x400001, "scrollx", function(off, data
 KEEP.t2 = sp:install_write_tap(0x400002, 0x400003, "scrolly", function(off, data, mask)
   reg.scrolly = combine(reg.scrolly, data, mask); logw("SY", off, data, mask) end)
 KEEP.t3 = sp:install_write_tap(0xd00000, 0xd00001, "spritebank", function(off, data, mask)
-  if (mask & 0xff00) ~= 0 then reg.spritebank = (data >> 15) & 1 end
+  if (mask & 0xff00) ~= 0 then reg.spritebank = (data >> 15) & 1; reg.flip = (data >> 14) & 1 end     -- bit 14: the hardware's screen flip (MAME ignores it)
   logw("SB", off, data, mask) end)
 KEEP.t4 = sp:install_write_tap(0x900000, 0x900001, "ctrl", function(off, data, mask)
   reg.ctrl = combine(reg.ctrl, data, mask)
@@ -127,7 +128,7 @@ end
 local function dump()
   local pre = string.format("%s/f%05d", DIR, f)
   local o = assert(io.open(pre .. ".regs", "w"))
-  o:write(string.format("%d %d %d %d %d %d %d\n", f, reg.scrollx, reg.scrolly, reg.spritebank, reg.sndbank, reg.ctrl, reg.wdog))
+  o:write(string.format("%d %d %d %d %d %d %d %d\n", f, reg.scrollx, reg.scrolly, reg.spritebank, reg.sndbank, reg.ctrl, reg.wdog, reg.flip))
   o:close()
   words(0x300000, 0x8000, pre .. ".ram300")
   words(0x700000, 0x8000, pre .. ".ram700")
@@ -141,6 +142,13 @@ end
 
 -- scripted inputs
 local function field(port, name) local p = mach.ioport.ports[port]; return p and p.fields[name] end
+-- DIPSET="<port>|<field>|<value>;..." sets DIP switches before the run (the setting's value, e.g. ":DSW2|Flip Screen|0" = On in Naname de Magic!)
+for item in string.gmatch(os.getenv("DIPSET") or "", "[^;]+") do
+  local port, name, val = string.match(item, "^([^|]+)|([^|]+)|(%d+)$")
+  local fld = port and field(port, name)
+  assert(fld, "bad DIPSET " .. item)
+  fld.user_value = tonumber(val)
+end
 local coin, start = field(":P1", "Coin 1"), field(":P1", "1 Player Start")
 local up, dn, lf, rt, b1 = field(":P1", "P1 Up"), field(":P1", "P1 Down"), field(":P1", "P1 Left"), field(":P1", "P1 Right"), field(":P1", "P1 Button 1")
 local SCHED       = os.getenv("SCHEDULE") or "play"
@@ -150,6 +158,17 @@ local PLAY_FRAME  = tonumber(os.getenv("PLAY_FRAME") or "460")
 local rng = tonumber(os.getenv("SEED") or "12345")
 local function rnd(n) rng = (rng * 1103515245 + 12345) & 0x7fffffff; return (rng >> 8) % n end
 local dir = 0
+-- ACTIONS="<frame>:<name>:<frames>,..." (names coin, start, up, down, left, right, b1) with SCHEDULE=actions: press <name> for <frames> frames from <frame>
+local ACT = {}
+for item in string.gmatch(os.getenv("ACTIONS") or "", "[^,]+") do
+  local af, an, ad = string.match(item, "^(%d+):(%w+):(%d+)$")
+  assert(af, "bad action " .. item)
+  ACT[#ACT + 1] = { f = tonumber(af), name = an, n = tonumber(ad) }
+end
+local function act_on(f, name)
+  for _, a in ipairs(ACT) do if a.name == name and f >= a.f and f < a.f + a.n then return true end end
+  return false
+end
 
 KEEP.notif = emu.add_machine_frame_notifier(function()
   f = absframe()
@@ -172,6 +191,11 @@ KEEP.notif = emu.add_machine_frame_notifier(function()
       dr = (dir == 4 or dir == 7 or dir == 8)
       bt = (f % 23 < 5)
     end
+    coin:set_value(cn and 1 or 0); start:set_value(st and 1 or 0)
+    up:set_value(du and 1 or 0); dn:set_value(dd and 1 or 0); lf:set_value(dl and 1 or 0); rt:set_value(dr and 1 or 0)
+    b1:set_value(bt and 1 or 0)
+  elseif SCHED == "actions" then
+    cn, st, du, dd, dl, dr, bt = act_on(f, "coin"), act_on(f, "start"), act_on(f, "up"), act_on(f, "down"), act_on(f, "left"), act_on(f, "right"), act_on(f, "b1")
     coin:set_value(cn and 1 or 0); start:set_value(st and 1 or 0)
     up:set_value(du and 1 or 0); dn:set_value(dd and 1 or 0); lf:set_value(dl and 1 or 0); rt:set_value(dr and 1 or 0)
     b1:set_value(bt and 1 or 0)

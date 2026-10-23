@@ -118,16 +118,16 @@ int main(int argc, char** argv) {
     }
 
     if (state_mode) {
-        // the state's registers: "<frame> <scrollx> <scrolly> <spritebank> <sndbank> <ctrl> <wdog>"
+        // the state's registers: "<frame> <scrollx> <scrolly> <spritebank> <sndbank> <ctrl> <wdog> [<flip>]"
         std::string rp;
         for (int i = 4; i < argc; i++) if (!strncmp(argv[i], "+state=", 7)) rp = std::string(argv[i] + 7) + ".regs";
         FILE* rf = fopen(rp.c_str(), "r");
         if (!rf) { fprintf(stderr, "cannot open %s\n", rp.c_str()); return 2; }
-        int fr, sx, sy, sb, a, b, c;
-        if (fscanf(rf, "%d %d %d %d %d %d %d", &fr, &sx, &sy, &sb, &a, &b, &c) != 7) { fprintf(stderr, "bad %s\n", rp.c_str()); return 2; }
+        int fr, sx, sy, sb, a, b, c, fl = 0;                 // the eighth field, the screen flip, is missing from older dumps
+        if (fscanf(rf, "%d %d %d %d %d %d %d %d", &fr, &sx, &sy, &sb, &a, &b, &c, &fl) < 7) { fprintf(stderr, "bad %s\n", rp.c_str()); return 2; }
         fclose(rf);
-        tb_regs(sx, sy, sb);
-        fprintf(stderr, "state of frame %d: scroll %04x / %04x, sprite bank %d\n", fr, sx, sy, sb);
+        tb_regs(sx, sy, sb | (fl << 1));
+        fprintf(stderr, "state of frame %d: scroll %04x / %04x, sprite bank %d, flip %d\n", fr, sx, sy, sb, fl);
     }
     t->sb_latch = sb_latch_arg ? 1 : 0;
     t->rst = 0;

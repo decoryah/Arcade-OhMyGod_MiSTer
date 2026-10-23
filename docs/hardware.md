@@ -35,9 +35,42 @@ Everything below is from that file and MAME's own output (`-listxml`, Lua dumps)
 
 Unmapped reads give 0; the mapped ranges are exact (no mirrors).
 
-Ports (all active low): P1 bit 0 up, 1 down, 2 left, 3 right, 4 button 1, 7 start 1, 8 coin 1, 9 service (no toggle);
-P2 the same with start 2, coin 2, service 1; the other bits unused. DSW1 bits 15:12 coin B, 11:8 coin A; DSW2 as in the
-MRA (`tools/make_mra.py`).
+Ports (all active low): P1 bit 0 up, 1 down, 2 left, 3 right, 4 button 1, 7 start 1, 8 coin 1, 9 service mode (MAME's
+`PORT_SERVICE_NO_TOGGLE`, key F2: the test switch); P2 the same with start 2, coin 2 and bit 9 = service 1 (key 9); the other bits
+unused. DSW1 bits 15:12 coin B, 11:8 coin A; DSW2 as in the MRA (`tools/make_mra.py`).
+
+The two bit-9 inputs are different switches and the program (checked in the 68000 listing, `unidasm`) treats them differently:
+the vertical-blank interrupt handler reads P1 and, with bit 9 low, sets the main state variable (0x704000) to 2, the test menu
+(MONITOR TEST, SWITCH TEST, SOUND TEST, DIP SW LIST, EXIT; "PUSH 1P SELECT BUTTON" -- the game's own word for Start is SELECT,
+for the action button BUTTON; the switch test screen lists COIN 1 / 2, SERVICE, TEST SW, SELECT, BUTTON and STICK, and "PUSH TEST
+SW RETURN TO MENU"); the coin routine (0x1b256) adds a credit for a new edge on P1 bit 8 (coin 1), P2 bit 8 (coin 2) or P2 bit 9
+(service 1). The core therefore keeps them apart: pad *Service* and key 9 drive P2 bit 9 only, pad *Test* and key F2 drive P1 bit 9
+only (an earlier build tied both to one input, so pressing Service also opened the test menu).
+
+The one button (observed in MAME 0.289 with `tools/lua/probe_inputs.lua`): in **Oh My God!** it makes the falling chain of
+balls fall like Down does and does nothing while the chain is swung sideways (Left / Right swing the chain to that side, Up does
+nothing); in **Naname de Magic!** it turns the falling piece. The MRAs name it Drop and Rotate.
+
+## Screen flip (bit 14 of the sprite bank register)
+
+MAME ignores it (both games are `MACHINE_NO_COCKTAIL`), so with Naname de Magic!'s **Flip Screen** DIP (DSW2 bit 14, On = 0) MAME
+shows a broken picture: no background and the sprites in other places. What the game does with the DIP on (compared frame for frame
+with the DIP off, same inputs, `tools/lua/probe_inputs.lua` `DIPSET`, `WRSUM`; `tools/lua/dump_state.lua` `DIPSET`, `ACTIONS`):
+
+* It writes the sprite bank register (D00000) as 0x4000 / 0xC000 instead of 0x0000 / 0x8000: **bit 14 is the flip**.
+* Tile RAM is identical, in place. The scroll registers differ: 0x01B3 / 0x0301 instead of 0x818C / 0x81F0, i.e. the unflipped value
+  (mod 512) plus **39 (x) and 273 (y)**.
+* The sprite list has the same entries (codes, colours, flip x bits); the positions are the unflipped ones moved by **-57 in word 0
+  (x) and +17 in word 1 (y)**, every sprite alike.
+
+Take those constants out and the flip-mode state renders (the ordinary renderer) to MAME's unflipped picture, pixel for pixel, at
+every frame tried (16 of 16 states of one play script: `sim/bench/mame/run_flip.sh`, `tools/omg_flipstates.py`). So the hardware turns
+the whole picture, tiles and sprites together, through 180 degrees (both axes change, and the game pre-compensates for the
+board's own mirroring constants), and this is what the core does: `omg_main` keeps bit 14, `omg_core` takes it over at the start of
+vertical blank (a frame is drawn and shown one way), `omg_render` takes the constants out of the scroll words and the sprite
+positions, `omg_video` draws the lines from the bottom up and reads the line buffer from its right end. The game sets the bit only
+for Naname's DIP; Oh My God! never does (its DSW2 bit 14 is "Balls Have Eyes").
+Not seen on a real board: the 180 degrees are the reading that makes the game's own numbers come out exactly.
 
 ## Video
 

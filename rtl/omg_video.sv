@@ -7,6 +7,7 @@
 `default_nettype none
 module omg_video (
     input  logic        clk,
+    input  logic        flip,             // the screen is turned 180 degrees: the lines are drawn from the bottom up and read out backwards (held for a whole frame)
 
     // raster out
     output logic        ce_pix,
@@ -44,6 +45,7 @@ module omg_video (
     wire        wrap = (hc == H_TOT - 1);
     wire [8:0]  hn = wrap ? 9'd0 : hc + 9'd1;
     wire [8:0]  vn = wrap ? ((vc == V_TOT - 1) ? 9'd0 : vc + 9'd1) : vc;
+    wire  [7:0] next_d = (vn == 9'(V_TOT - 1)) ? 8'd0 : vn[7:0] + 8'd1;            // the line after the one that starts now: the one drawn meanwhile (valid when `wrap`)
 
     always_ff @(posedge clk) begin
         line_start <= 1'b0;
@@ -59,7 +61,7 @@ module omg_video (
                 // line vn starts: draw the one after it (the last blank line draws line 0 of the next frame)
                 line_bank  <= ~vn[0];
                 line_start <= (vn == V_TOT - 1) || (vn + 9'd1 < V_ACT);
-                line_no    <= (vn == V_TOT - 1) ? 8'd0 : vn[7:0] + 8'd1;
+                line_no    <= flip ? (8'(V_ACT - 1) - next_d) : next_d;       // the picture line to draw: the next one shown, from the other end when flipped
                 vbl_pulse  <= (vn == V_ACT);
             end
         end
@@ -69,7 +71,8 @@ module omg_video (
     // the dot after the next one is read two clocks ahead of the register: the line buffer's output is registered, so is
     // the palette RAM's (omg_main's port B), and the dot's colour is registered at the dot edge.
     wire        rd_bank = wrap ? ~vc[0] : vc[0];
-    wire [9:0]  rd_addr = {rd_bank, hn};
+    wire  [8:0] rd_x    = (flip && hn < H_ACT) ? 9'(H_ACT - 1) - hn : hn;      // flipped, the picture is read from its right end
+    wire [9:0]  rd_addr = {rd_bank, rd_x};
     logic [9:0] lb_q;
     omg_sdp #(.AW(10), .DW(10)) u_lb (.clk(clk), .we(lb_we), .waddr(lb_addr), .wdata(lb_data), .raddr(rd_addr), .rdata(lb_q));
     assign pal_addr = lb_q;

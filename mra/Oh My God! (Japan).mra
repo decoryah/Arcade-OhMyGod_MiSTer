@@ -38,7 +38,7 @@
         <dip bits="15" name="Test Mode" ids="On,Off"/>
     </switches>
 
-    <rom index="0" zip="ohmygod.zip" md5="None">
+    <rom index="0" zip="ohmygod.zip" md5="None" address="0x32000000">
 
         <!-- maincpu: 512 KB -->
         <part name="omg-p.114" crc="48fa40ca"/>
@@ -53,5 +53,5 @@
 
     </rom>
 
-    <buttons names="Button,Start,Coin,Service" default="A,Start,Select,R"/>
+    <buttons names="Drop,Start,Coin" default="A,Start,Select"/>
 </misterromdescription>

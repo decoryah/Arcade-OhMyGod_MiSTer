@@ -13,7 +13,8 @@
 //   900000         control (w): low byte = OKI bank (bits 7:4 Oh My God!, 3:0 Naname), high byte bits 12 / 13 coin counters
 //   B00001         OKI M6295 (byte, low lane)
 //   C00000         watchdog (r)
-//   D00000         sprite bank (w, bit 15 of the word = bit 7 of the high byte)
+//   D00000         sprite bank (w, bit 15 of the word = bit 7 of the high byte) and screen flip (bit 14; MAME ignores it: both games are
+//                  MACHINE_NO_COCKTAIL.  Naname de Magic! sets it with its "Flip Screen" DIP switch, see docs/hardware.md)
 //
 // Every access completes with DTACK from here: block-RAM accesses after four clocks, ROM accesses when the cache has the word.
 // Unmapped addresses read as 0 and swallow writes (MAME's defaults).
@@ -50,6 +51,7 @@ module omg_main (
     // video: registers (live)
     output logic [15:0] scrollx, scrolly,
     output logic        spritebank,
+    output logic        flipscreen,                   // bit 14 of the sprite bank register: the screen is flipped (turned 180 degrees)
 
     // OKI M6295
     output logic        oki_wr,                       // one-cycle pulse
@@ -182,7 +184,7 @@ module omg_main (
     // at start-up; MAME clears its copies, but its tilemap keeps the scroll it was given), which also lets the simulation hold the
     // CPU in reset with a frozen state loaded.
     logic [3:0] bank_r;
-    initial begin scrollx = 16'd0; scrolly = 16'd0; spritebank = 1'b0; bank_r = 4'd0; end
+    initial begin scrollx = 16'd0; scrolly = 16'd0; spritebank = 1'b0; flipscreen = 1'b0; bank_r = 4'd0; end
     always_ff @(posedge clk) begin
         if (reset) bank_r <= 4'd0;
         else if (we) begin
@@ -197,7 +199,7 @@ module omg_main (
                 if (be[1]) scrolly[15:8] <= oEdb[15:8];
                 if (be[0]) scrolly[7:0]  <= oEdb[7:0];
             end
-            if (sel_sbk && be[1]) spritebank <= oEdb[15];
+            if (sel_sbk && be[1]) begin spritebank <= oEdb[15]; flipscreen <= oEdb[14]; end
         end
     end
     assign oki_bank = bank_r;

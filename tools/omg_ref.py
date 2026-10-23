@@ -31,7 +31,8 @@ def load_state(prefix):
     # MAME converts the frame's pen indexes with the palette of the NEXT callback (see tools/lua/dump_state.lua)
     s["pal1"] = hexwords(prefix + ".pal1") if os.path.exists(prefix + ".pal1") else s["pal"]
     regs = [int(x) for x in open(prefix + ".regs").read().split()]
-    s["frame"], s["scrollx"], s["scrolly"], s["spritebank"], s["sndbank"], s["ctrl"], s["wdog"] = regs
+    s["frame"], s["scrollx"], s["scrolly"], s["spritebank"], s["sndbank"], s["ctrl"], s["wdog"] = regs[:7]
+    s["flip"] = regs[7] if len(regs) > 7 else 0       # bit 14 of the sprite bank register (older dumps: not recorded)
     return s
 
 
@@ -54,8 +55,13 @@ def render(st, gfx, scroll_sign=1, pal_key="pal1"):
     # the bitmap's visible window only: index = pal index
     idx = [[0] * W for _ in range(H)]
 
-    sx_eff = (st["scrollx"] - 0x81ec) & 0x1ff
-    sy_eff = (st["scrolly"] - 0x81ef) & 0x1ff
+    # The screen flip (the hardware turns the picture 180 degrees; MAME does not implement it): the game then writes the scroll words
+    # 39 / 273 higher and the sprite words 57 lower (x) and 17 higher (y) than for the unflipped picture, tile RAM and sprite codes as
+    # they are (measured with MAME on Naname de Magic!'s Flip Screen DIP: with the constants taken out its picture equals MAME's
+    # unflipped one pixel for pixel, tools/lua/probe_inputs.lua, docs/hardware.md); the picture is that one turned 180 degrees.
+    flip = st.get("flip", 0)
+    sx_eff = (st["scrollx"] - 0x81ec - (39 if flip else 0)) & 0x1ff
+    sy_eff = (st["scrolly"] - 0x81ef - (273 if flip else 0)) & 0x1ff
     for y in range(H):
         my = (y + scroll_sign * sy_eff) & 0x1ff
         ty, fy = my >> 3, my & 7
@@ -75,6 +81,9 @@ def render(st, gfx, scroll_sign=1, pal_key="pal1"):
     for i in range(1024):
         o = base + 4 * i
         w0, w1, w2, w3 = spr[o], spr[o + 1], spr[o + 2], spr[o + 3]
+        if flip:
+            w0 = (w0 + 57) & 0xffff
+            w1 = (w1 - 17) & 0xffff
         code = w3 & 0x0fff
         color = w2 & 15
         sx = w0 - 29
@@ -95,6 +104,8 @@ def render(st, gfx, scroll_sign=1, pal_key="pal1"):
                 if pen:
                     idx[y][vx] = 512 + color * 16 + pen
 
+    if flip:
+        idx = [row[::-1] for row in idx[::-1]]
     out = bytearray(W * H * 3)
     for y in range(H):
         for x in range(W):

@@ -24,6 +24,7 @@ module omg_render #(
 
     input  logic [15:0] scrollx, scrolly,
     input  logic        spritebank,
+    input  logic        flip,                     // the screen flip: the picture drawn here is the one the game would show unflipped (omg_video turns it)
 
     // tile RAM: {attr, code} of the tile index, one clock after the address
     output logic [11:0] vr_addr,
@@ -90,10 +91,11 @@ module omg_render #(
 
     wire [15:0] w0 = sr_data[15:0], w1 = sr_data[31:16], w2 = sr_data[47:32], w3 = sr_data[63:48];
     // y test: row = y - sy, sy signed 16 bit
-    wire signed [17:0] row_s  = $signed({10'd0, y}) - $signed({{2{w1[15]}}, w1});
+    // Flipped, the game's sprite words are the unflipped ones moved by (-57, +17): put them back (docs/hardware.md, tools/lua/probe_inputs.lua)
+    wire signed [17:0] row_s  = $signed({10'd0, y}) - $signed({{2{w1[15]}}, w1}) + (flip ? 18'sd17 : 18'sd0);
     wire               hit_y  = (row_s >= 18'sd0) && (row_s < 18'sd16);
     // x test: x = w0 - 29 - 96 = w0 - 125, visible when -16 < x < 320
-    wire signed [17:0] x_s    = $signed({2'b00, w0}) - 18'sd125;
+    wire signed [17:0] x_s    = $signed({2'b00, w0}) - 18'sd125 + (flip ? 18'sd57 : 18'sd0);
     wire               hit_x  = (x_s > -18'sd16) && (x_s < 18'sd320);
     wire               hit    = v_sd && hit_y && hit_x;
 
@@ -131,8 +133,9 @@ module omg_render #(
                 S_IDLE: if (start) begin
                     y     <= line;
                     bk    <= bank;
-                    off_x <= scrollx[8:0] + 9'd116;                 // 96 + (scrollx - 0x81ec) mod 512
-                    my    <= {1'b0, line} + scrolly[8:0] + 9'd17;   // y + (scrolly - 0x81ef) mod 512
+                    // flipped, the game's scroll words are the unflipped ones plus (39, 273): take them out (-273 = +239 mod 512)
+                    off_x <= scrollx[8:0] + (flip ? 9'd77 : 9'd116);               // 96 + (scrollx - 0x81ec) mod 512 (116 - 39 = 77)
+                    my    <= {1'b0, line} + scrolly[8:0] + (flip ? 9'd256 : 9'd17); // y + (scrolly - 0x81ef) mod 512 (17 + 239 = 256)
                     sbk   <= spritebank;
                     ti    <= 6'd0;
                     st    <= T_ADDR;

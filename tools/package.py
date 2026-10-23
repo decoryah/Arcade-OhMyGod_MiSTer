@@ -4,7 +4,7 @@
   _Arcade/<title>.mra                              the two MRAs                (mra/*.mra)
   _Arcade/cores/ohmygod_<YYYYMMDD>.rbf             the core                    (releases/ohmygod_<YYYYMMDD>.rbf)
 
-  python tools/package.py [YYYYMMDD]        (default: the newest RBF in releases/)
+  python tools/package.py [YYYYMMDD[a-z]]   (default: the newest RBF in releases/; a letter after the date numbers a second build of the day)
 
 Writes dist/OhMyGod_MiSTer_<YYYYMMDD>.zip (dist/ is not in the repository: attach the zip to the GitHub release).  Unzip it over
 the root of the SD card.  No ROMs are in it: the MAME 0.289 romsets (ohmygod.zip, naname.zip) go to /media/fat/games/mame/.
@@ -22,14 +22,14 @@ DIST = os.path.join(REPO, 'dist')
 
 def main(argv):
     rbfs = sorted(glob.glob(os.path.join(REPO, 'releases', 'ohmygod_*.rbf')))
-    rbfs = [r for r in rbfs if re.search(r'ohmygod_\d{8}\.rbf$', r)]
+    rbfs = [r for r in rbfs if re.search(r'ohmygod_\d{8}[a-z]?\.rbf$', r)]
     if argv:
         rbfs = [r for r in rbfs if r.endswith('ohmygod_%s.rbf' % argv[0])]
     if not rbfs:
         print('no releases/ohmygod_YYYYMMDD.rbf')
         return 1
     rbf = rbfs[-1]
-    date = re.search(r'ohmygod_(\d{8})\.rbf$', rbf).group(1)
+    date = re.search(r'ohmygod_(\d{8}[a-z]?)\.rbf$', rbf).group(1)
     mras = sorted(glob.glob(os.path.join(REPO, 'mra', '*.mra')), key=lambda p: os.path.basename(p).lower())
     os.makedirs(DIST, exist_ok=True)
     out = os.path.join(DIST, 'OhMyGod_MiSTer_%s.zip' % date)

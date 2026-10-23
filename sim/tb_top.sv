@@ -143,9 +143,10 @@ module tb_top (
     // the video registers are forced by the C++ side after elaboration (an initial block here would race with the
     // module's own power-up values)
     export "DPI-C" function tb_regs;
-    function void tb_regs(input int sx, input int sy, input int sb);
+    function void tb_regs(input int sx, input int sy, input int sb);       // sb: bit 0 the sprite bank, bit 1 the screen flip
         u_core.u_main.scrollx    = sx[15:0];
         u_core.u_main.scrolly    = sy[15:0];
         u_core.u_main.spritebank = sb[0];
+        u_core.u_main.flipscreen = sb[1];
     endfunction
 endmodule

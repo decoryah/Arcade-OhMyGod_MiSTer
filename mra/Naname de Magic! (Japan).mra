@@ -38,7 +38,7 @@
         <dip bits="15" name="Freeze" ids="On,Off"/>
     </switches>
 
-    <rom index="0" zip="naname.zip" md5="None">
+    <rom index="0" zip="naname.zip" md5="None" address="0x32000000">
 
         <!-- maincpu: 512 KB -->
         <part name="036-prg.114" crc="3b7362f7"/>
@@ -53,5 +53,5 @@
 
     </rom>
 
-    <buttons names="Button,Start,Coin,Service" default="A,Start,Select,R"/>
+    <buttons names="Rotate,Start,Coin" default="A,Start,Select"/>
 </misterromdescription>
