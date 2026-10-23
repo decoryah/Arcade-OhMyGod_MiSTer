@@ -182,8 +182,9 @@ MAME's unflipped picture; the picture the hardware shows is that one turned thro
 
 The flip is taken over at the start of vertical blank (a frame is drawn and shown one way); the lines are drawn from the bottom up and read
 out from the right, the tile scroll and the sprite positions are corrected by the constants; nothing changes when the bit is clear. It is
-what the hardware does in the sense that the game's own numbers come out exactly; nothing has been seen on a real board. Oh My God! never
-sets the bit.
+what the hardware does in the sense that the game's own numbers come out exactly, and on a real MiSTer (20261023b, the owner's test)
+Naname's Flip Screen now flips the picture correctly. Oh My God!'s program has no flip: its sprite copy routine never reads the DIP or
+writes bit 14.
 
 The Service and Test entries are gone from the controller mapping (J1 and the MRAs list only the button, Start and Coin): Service (key 9, a
 credit) and Test (key F2, the test menu) are keys only. The bench's input table shows pad bits 7 / 8 reach nothing.
@@ -202,7 +203,7 @@ credit) and Test (key F2, the test menu) are keys only. The bench's input table 
 
 `releases/ohmygod_20261023b.rbf` is that build (Quartus 17.0.2, seed 2), `dist/OhMyGod_MiSTer_20261023b.zip` the SD card zip (the letter
 numbers the day's second build: MiSTer takes the newest by name). Seeds 1 and 2 both met timing; seed 1's margins were smaller
-(core clock setup +0.467 ns, hold +0.246, HDMI hold +0.221), so `OhMyGod.qsf` now carries `SEED 2`. **Not yet tested on a real MiSTer.**
+(core clock setup +0.467 ns, hold +0.246, HDMI hold +0.221), so `OhMyGod.qsf` now carries `SEED 2`. **Tested on a real MiSTer by the owner: the Flip Screen of Naname de Magic! flips correctly.**
 
 Regression of the unchanged picture on this RTL: the frozen-state corpus (`sim/bench/corpus_rtl.sh`) is **60 of 60 identical to MAME for both games**
 (longest line render 3,424 / 3,267 clocks, as before); the top-level bench (`sim/emu/run_emu.sh`, fast load) again gives machine frames 230 and 280

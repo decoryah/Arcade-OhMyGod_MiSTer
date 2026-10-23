@@ -69,8 +69,11 @@ the whole picture, tiles and sprites together, through 180 degrees (both axes ch
 board's own mirroring constants), and this is what the core does: `omg_main` keeps bit 14, `omg_core` takes it over at the start of
 vertical blank (a frame is drawn and shown one way), `omg_render` takes the constants out of the scroll words and the sprite
 positions, `omg_video` draws the lines from the bottom up and reads the line buffer from its right end. The game sets the bit only
-for Naname's DIP; Oh My God! never does (its DSW2 bit 14 is "Balls Have Eyes").
-Not seen on a real board: the 180 degrees are the reading that makes the game's own numbers come out exactly.
+for Naname's DIP; Oh My God!'s program never does (its DSW2 bit 14 is "Balls Have Eyes"). The two sprite copy routines show it: Naname's
+(the routine at 0x1310) tests DSW2 bit 14, and with the DIP on subtracts 0x39 from every sprite x, adds 0x11 to y (mod 0x400) and ORs 0x4000
+into the bank word -- the constants measured above; Oh My God!'s (0x1a952) copies the list as it is and writes only the bank bit.
+The 180 degrees are the reading that makes the game's own numbers come out exactly, and on a real MiSTer (20261023b, the owner's test) the
+picture turns correctly with Naname's Flip Screen DIP on.
 
 ## Video
 

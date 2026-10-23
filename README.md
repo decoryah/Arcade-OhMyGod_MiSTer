@@ -13,8 +13,8 @@ supply your own MAME romsets.
 ## Status
 
 **Tested on a real MiSTer** by the repository owner: the picture, the sound, the controls and the OSD options (20261010), and
-the new features of 20261023 (fast loading, Scale, named buttons). The Flip Screen of Naname de Magic! did not flip in
-20261023; 20261023b fixes that and removes Service and Test from the button mapping, and has not been on a board yet.
+the new features of 20261023 (fast loading, Scale, named buttons) and, in 20261023b, the Flip Screen of Naname de Magic!, which
+did not flip in 20261023 and now does. 20261023b also removes Service and Test from the button mapping.
 
 What was checked besides, in simulation and in the Quartus tool flow, against MAME 0.289 (details and numbers in
 `docs/status.md`):
